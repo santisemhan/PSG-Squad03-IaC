@@ -1,0 +1,780 @@
+Parameters:
+  LabName:
+    Type: String
+    Default: PSG-Client
+    Description: Lab Name
+  SubnetPublic1CIDR:
+    Type: String
+    Default: 10.0.0.0/24
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+  SubnetPublic2CIDR:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+  SubnetPrivate1CIDR:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+  SubnetPrivate2CIDR:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+  BastionSshIpCIDR:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: Please enter your IP range (CIDR notation) for access to the bastion host by SSH
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Description: Gets the latest AMI from Systems Manager Parameter store
+  LatestAmiIdNet:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Description: Gets the latest AMI from Systems Manager Parameter store
+Resources:
+  PSGClientKey:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: psg-client-key
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/PSGClientKey
+  Vpc8378EB38:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value:
+            Ref: LabName
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/Resource
+  VpcPublicSubnet1Subnet5C2D37C4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1a
+      CidrBlock: 10.0.0.0/19
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet1/Subnet
+  VpcPublicSubnet1RouteTable6C95E38E:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet1/RouteTable
+  VpcPublicSubnet1RouteTableAssociation97140677:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicSubnet1RouteTable6C95E38E
+      SubnetId:
+        Ref: VpcPublicSubnet1Subnet5C2D37C4
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet1/RouteTableAssociation
+  VpcPublicSubnet1DefaultRoute3DA9E72A:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicSubnet1RouteTable6C95E38E
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: VpcIGWD7BA715C
+    DependsOn:
+      - VpcVPCGWBF912B6E
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet1/DefaultRoute
+  VpcPublicSubnet1EIPD7E02669:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet1/EIP
+  VpcPublicSubnet1NATGateway4D7517AA:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: VpcPublicSubnet1Subnet5C2D37C4
+      AllocationId:
+        Fn::GetAtt:
+          - VpcPublicSubnet1EIPD7E02669
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet1
+    DependsOn:
+      - VpcPublicSubnet1DefaultRoute3DA9E72A
+      - VpcPublicSubnet1RouteTableAssociation97140677
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet1/NATGateway
+  VpcPublicSubnet2Subnet691E08A3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1b
+      CidrBlock: 10.0.32.0/19
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet2/Subnet
+  VpcPublicSubnet2RouteTable94F7E489:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet2/RouteTable
+  VpcPublicSubnet2RouteTableAssociationDD5762D8:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicSubnet2RouteTable94F7E489
+      SubnetId:
+        Ref: VpcPublicSubnet2Subnet691E08A3
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet2/RouteTableAssociation
+  VpcPublicSubnet2DefaultRoute97F91067:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicSubnet2RouteTable94F7E489
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: VpcIGWD7BA715C
+    DependsOn:
+      - VpcVPCGWBF912B6E
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet2/DefaultRoute
+  VpcPublicSubnet2EIP3C605A87:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet2/EIP
+  VpcPublicSubnet2NATGateway9182C01D:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: VpcPublicSubnet2Subnet691E08A3
+      AllocationId:
+        Fn::GetAtt:
+          - VpcPublicSubnet2EIP3C605A87
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet2
+    DependsOn:
+      - VpcPublicSubnet2DefaultRoute97F91067
+      - VpcPublicSubnet2RouteTableAssociationDD5762D8
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet2/NATGateway
+  VpcPublicSubnet3SubnetBE12F0B6:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1c
+      CidrBlock: 10.0.64.0/19
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet3
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet3/Subnet
+  VpcPublicSubnet3RouteTable93458DBB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet3
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet3/RouteTable
+  VpcPublicSubnet3RouteTableAssociation1F1EDF02:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicSubnet3RouteTable93458DBB
+      SubnetId:
+        Ref: VpcPublicSubnet3SubnetBE12F0B6
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet3/RouteTableAssociation
+  VpcPublicSubnet3DefaultRoute4697774F:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicSubnet3RouteTable93458DBB
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: VpcIGWD7BA715C
+    DependsOn:
+      - VpcVPCGWBF912B6E
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet3/DefaultRoute
+  VpcPublicSubnet3EIP3A666A23:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet3
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet3/EIP
+  VpcPublicSubnet3NATGateway7640CD1D:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: VpcPublicSubnet3SubnetBE12F0B6
+      AllocationId:
+        Fn::GetAtt:
+          - VpcPublicSubnet3EIP3A666A23
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PublicSubnet3
+    DependsOn:
+      - VpcPublicSubnet3DefaultRoute4697774F
+      - VpcPublicSubnet3RouteTableAssociation1F1EDF02
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PublicSubnet3/NATGateway
+  VpcPrivateSubnet1Subnet536B997A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1a
+      CidrBlock: 10.0.96.0/19
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PrivateSubnet1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet1/Subnet
+  VpcPrivateSubnet1RouteTableB2C5B500:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PrivateSubnet1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet1/RouteTable
+  VpcPrivateSubnet1RouteTableAssociation70C59FA6:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet1RouteTableB2C5B500
+      SubnetId:
+        Ref: VpcPrivateSubnet1Subnet536B997A
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet1/RouteTableAssociation
+  VpcPrivateSubnet1DefaultRouteBE02A9ED:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet1RouteTableB2C5B500
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: VpcPublicSubnet1NATGateway4D7517AA
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet1/DefaultRoute
+  VpcPrivateSubnet2Subnet3788AAA1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1b
+      CidrBlock: 10.0.128.0/19
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PrivateSubnet2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet2/Subnet
+  VpcPrivateSubnet2RouteTableA678073B:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PrivateSubnet2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet2/RouteTable
+  VpcPrivateSubnet2RouteTableAssociationA89CAD56:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet2RouteTableA678073B
+      SubnetId:
+        Ref: VpcPrivateSubnet2Subnet3788AAA1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet2/RouteTableAssociation
+  VpcPrivateSubnet2DefaultRoute060D2087:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet2RouteTableA678073B
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: VpcPublicSubnet2NATGateway9182C01D
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet2/DefaultRoute
+  VpcPrivateSubnet3SubnetF258B56E:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1c
+      CidrBlock: 10.0.160.0/19
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PrivateSubnet3
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet3/Subnet
+  VpcPrivateSubnet3RouteTableD98824C7:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value: ClientAppInfrastructureStack/Vpc/PrivateSubnet3
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet3/RouteTable
+  VpcPrivateSubnet3RouteTableAssociation16BDDC43:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet3RouteTableD98824C7
+      SubnetId:
+        Ref: VpcPrivateSubnet3SubnetF258B56E
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet3/RouteTableAssociation
+  VpcPrivateSubnet3DefaultRoute94B74F0D:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet3RouteTableD98824C7
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: VpcPublicSubnet3NATGateway7640CD1D
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/PrivateSubnet3/DefaultRoute
+  VpcIGWD7BA715C:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Ref: LabName
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/IGW
+  VpcVPCGWBF912B6E:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      InternetGatewayId:
+        Ref: VpcIGWD7BA715C
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/Vpc/VPCGW
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Ref: LabName
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/InternetGateway
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      InternetGatewayId:
+        Ref: InternetGateway
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/InternetGatewayAttachment
+  MySubnetPublic1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1a
+      CidrBlock:
+        Ref: SubnetPublic1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: LabName
+                - " Subnet Public A"
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/MySubnetPublic1
+  MySubnetPublic2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1b
+      CidrBlock:
+        Ref: SubnetPublic2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: LabName
+                - " Subnet Public B"
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/MySubnetPublic2
+  SubnetPrivate1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1a
+      CidrBlock:
+        Ref: SubnetPrivate1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: LabName
+                - " Subnet Private A"
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SubnetPrivate1
+  SubnetPrivate2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      AvailabilityZone: us-east-1b
+      CidrBlock:
+        Ref: SubnetPrivate2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: LabName
+                - " Subnet Private B"
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SubnetPrivate2
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: LabName
+                - " Public RT"
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/PublicRouteTable
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+    DependsOn:
+      - InternetGatewayAttachment
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/DefaultPublicRoute
+  SubnetPublic1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: MySubnetPublic1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SubnetPublic1RouteTableAssociation
+  SubnetPublic2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: MySubnetPublic2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SubnetPublic2RouteTableAssociation
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: LabName
+                - " Private RT"
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/PrivateRouteTable
+  SubnetPrivate1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable
+      SubnetId:
+        Ref: SubnetPrivate1
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SubnetPrivate1RouteTableAssociation
+  SubnetPrivate2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable
+      SubnetId:
+        Ref: SubnetPrivate2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SubnetPrivate2RouteTableAssociation
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: DB subnet group
+      SubnetIds:
+        - Ref: SubnetPrivate1
+        - Ref: SubnetPrivate2
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/DBSubnetGroup
+  SecurityGroupNoIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group with no ingress rule
+      GroupName: no-ingress-sg
+      VpcId:
+        Ref: Vpc8378EB38
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SecurityGroupNoIngress
+  SecurityGroupWebDMZ:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Web DMZ Security Group
+      GroupName: Web-DMZ-SG
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp:
+            Ref: BastionSshIpCIDR
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId:
+        Ref: Vpc8378EB38
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SecurityGroupWebDMZ
+  SecurityGroupDB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Database Security Group
+      GroupName: DB-SG
+      SecurityGroupIngress:
+        - FromPort: 3306
+          IpProtocol: tcp
+          SourceSecurityGroupId:
+            Ref: SecurityGroupWebDMZ
+          ToPort: 3306
+        - FromPort: 22
+          IpProtocol: tcp
+          SourceSecurityGroupId:
+            Ref: SecurityGroupWebDMZ
+          ToPort: 22
+      VpcId:
+        Ref: Vpc8378EB38
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/SecurityGroupDB
+  FrontendInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Ref: LatestAmiId
+      InstanceType: t2.micro
+      KeyName:
+        Ref: PSGClientKey
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: SecurityGroupWebDMZ
+          SubnetId:
+            Ref: MySubnetPublic1
+      Tags:
+        - Key: Name
+          Value: PSG Client Frontend Site
+      UserData:
+        Fn::Base64: |-
+          #!/bin/bash
+                    yum update -y
+                    yum install -y git
+                    sudo yum -y install curl
+                    curl -sL https://rpm.nodesource.com/setup_16.x | sudo bash -
+                    sudo yum install -y nodejs
+
+                    # Install PSG-Client-Frontend
+                    cd $HOME
+                    git clone https://github.com/santisemhan/PSG-Squad03.git
+                    ls -halt > ls.txt
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/FrontendInstance
+  BackendInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Ref: LatestAmiIdNet
+      InstanceType: t2.micro
+      KeyName:
+        Ref: PSGClientKey
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: false
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: SecurityGroupDB
+          SubnetId:
+            Ref: SubnetPrivate1
+      Tags:
+        - Key: Name
+          Value: PSG Client Backend Site
+      UserData:
+        Fn::Base64: |-
+          #!/bin/bash
+                    yum update -y
+                    yum install -y git
+                    yum install -y dotnet-sdk-7.0
+
+                    # Install PSG-Client-Backend
+                    cd $HOME
+                    git clone https://github.com/santisemhan/PSG-Squad03.git
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/BackendInstance
+  AuthSecretC13F30CE:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      GenerateSecretString: {}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/AuthSecret/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/0WQQW/CMAyFf8vuaRhME1wZTAhNGlGZuE5u6m2BNqkcB1RV/e9LSbee/PzlxXr2Qi6f5OMD3Hymy0tWmUJ2RwZ9EZsvq4CgRkYS8f2zQ72QXcRv2CowJE6NHlwntREqFJXRx1BY5IFNKneB8QOKCic+sbX3Thtg4+y/eRCvezWUd+AdMN6gFYrMNcpp8N7GYFH/GVKSsVtz3OGnRpvSoA5kuN2RC0366xmsxl5Q6WUE25c0ODk8akL2NVj4RooHuffjpKj6XuToXSB9D3sI3IS07Eh7YV2J8uxn1/lKzp/jhc/emIyCZVOjzFP9BTS5hX19AQAA
+    Metadata:
+      aws:cdk:path: ClientAppInfrastructureStack/CDKMetadata/Default
+Outputs:
+  VPCCreated:
+    Description: VPC Created
+    Value:
+      Ref: Vpc8378EB38
+  subnetsPublicCreated:
+    Description: A list of the public subnets
+    Value:
+      Fn::Join:
+        - ""
+        - - Ref: MySubnetPublic1
+          - ", "
+          - Ref: MySubnetPublic2
+  SubnetsPrivateCreated:
+    Description: A list of the private subnets
+    Value:
+      Fn::Join:
+        - ""
+        - - Ref: SubnetPrivate1
+          - ", "
+          - Ref: SubnetPrivate2
+  SubnetPublic1Created:
+    Description: Public subnet in the Availability Zone A
+    Value:
+      Ref: MySubnetPublic1
+  SubnetPublic2Created:
+    Description: Public subnet in the Availability Zone B
+    Value:
+      Ref: MySubnetPublic2
+  SubnetPrivate1Created:
+    Description: Private subnet in the Availability Zone A
+    Value:
+      Ref: SubnetPrivate1
+  SubnetPrivate2Created:
+    Description: Private subnet in the Availability Zone B
+    Value:
+      Ref: SubnetPrivate2
+  SecurityGroupNoIngressCreated:
+    Description: Security group with no ingress rule
+    Value:
+      Ref: SecurityGroupNoIngress
+  PSGClientWebSitesCreated:
+    Description: Frontend Available on
+    Value:
+      Fn::GetAtt:
+        - FrontendInstance
+        - PublicIp
+    Export:
+      Name: ClientAppInfrastructureStack-Frontend-PublicIp

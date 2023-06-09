@@ -1,0 +1,351 @@
+Description:  This template deploys a VPC, with 
+  A pair of public and private subnets spread across two Availability Zones.
+  It deploys an internet gateway, with a default route on the public subnets. 
+  It Needs The KeyPairs
+
+Parameters:
+
+  KeyName:
+    Description: We Need an existing EC2 KeyPair to do SSH access to the instances
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: Must be an existing EC2 KeyPair.
+    Default: psg-key
+    
+  MyLabName:
+    Description: Lab Name
+    Type: String
+    Default: PSG-Client
+
+  MyVPC:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  SubnetPublic1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.0.0/24
+
+  SubnetPublic2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.1.0/24
+
+  SubnetPrivate1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.2.0/24
+
+  SubnetPrivate2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.3.0/24
+
+  BastionSshIpCIDR:
+    Description: Please enter your IP range (CIDR notation) for access to the bastion host by SSH
+    Type: String
+    Default: 0.0.0.0/0
+
+  LatestAmiId:
+    Description: Gets the latest AMI from Systems Manager Parameter store
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+  LatestAmiIdNet:
+    Description: Gets the latest AMI from Systems Manager Parameter store
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    # Default: '/aws/service/ami-amazon-linux-latest/amzn2-x86_64-MATEDE_DOTNET'
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref MyVPC
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Ref MyLabName
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref MyLabName
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  SubnetPublic1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref SubnetPublic1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyLabName} Subnet Public A
+
+  SubnetPublic2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref SubnetPublic2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyLabName} Subnet Public B
+
+  SubnetPrivate1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref SubnetPrivate1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyLabName} Subnet Private A
+
+  SubnetPrivate2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref SubnetPrivate2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyLabName} Subnet Private B
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyLabName} Public RT
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetPublic1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref SubnetPublic1
+
+  SubnetPublic2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref SubnetPublic2
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyLabName} Private RT
+
+  SubnetPrivate1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref SubnetPrivate1
+
+  SubnetPrivate2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref SubnetPrivate2
+
+  # - {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetAPrivate'}
+  # - {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetBPrivate'}
+  DBSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: 'DB subnet group'
+      SubnetIds:
+      - !Ref SubnetPrivate1
+      - !Ref SubnetPrivate2
+
+  SecurityGroupNoIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "no-ingress-sg"
+      GroupDescription: "Security group with no ingress rule"
+      VpcId: !Ref VPC
+
+  SecurityGroupWebDMZ:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "Web-DMZ-SG"
+      GroupDescription: "Web DMZ Security Group"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref BastionSshIpCIDR
+
+  SecurityGroupDB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "DB-SG"
+      GroupDescription: "Database Security Group"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref SecurityGroupWebDMZ
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref SecurityGroupWebDMZ
+
+  MyFrontendInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref LatestAmiId
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: SecurityGroupWebDMZ
+          SubnetId:
+            Ref: SubnetPublic1
+      Tags:
+        - Key: Name
+          Value: PSG Client Frontend Site
+      UserData:
+        'Fn::Base64': 
+          !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y git
+            sudo yum -y install curl
+            curl -sL https://rpm.nodesource.com/setup_16.x | sudo bash -
+            sudo yum install -y nodejs
+
+            # Install PSG-Client-Frontend
+            cd $HOME
+            git clone https://github.com/santisemhan/PSG-Squad03.git
+            ls -halt > ls.txt
+
+  MyBackendInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref LatestAmiIdNet
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "false"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: SecurityGroupDB
+          SubnetId:
+            Ref: SubnetPrivate1
+      Tags:
+        - Key: Name
+          Value: PSG Client Backend Site
+      UserData:
+        'Fn::Base64': 
+          !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y git
+            yum install -y dotnet-sdk-7.0
+
+            # Install PSG-Client-Backend
+            cd $HOME
+            git clone https://github.com/santisemhan/PSG-Squad03.git
+
+  # MySqlMasterRDS:
+  #   Type: AWS::RDS::DBInstance
+  #   Properties:
+  #     DBName: !Ref 'WordpressDbName'
+  #     AllocatedStorage: 5                        #5 GB Minimo
+  #     DBInstanceClass: "db.t2.micro"
+  #     Engine: mysql
+  #     MasterUsername:     !Ref 'WordpressDbUser'
+  #     MasterUserPassword: !Ref 'WordpressDbPass'
+  #     DBSubnetGroupName: !Ref DBSubnetGroup
+  #     # MultiAZ: true
+  #     Tags:
+  #     - Key: Name
+  #       Value: MySQL RDS
+  #     VPCSecurityGroups: [ !GetAtt [SecurityGroupDB, GroupId] ]
+  #   DeletionPolicy: Snapshot
+
+  # MySqlReadReplicaRDS:
+  #   Type: AWS::RDS::DBInstance
+  #   Properties:
+  #     SourceDBInstanceIdentifier: !Ref 'MySqlMasterRDS'
+  #     DBInstanceClass: "db.t2.small"
+  #     Tags:
+  #     - Key: Name
+  #       Value: MySQL RDS-RR
+
+Outputs:
+  VPC:
+    Description: VPC Created
+    Value: !Ref VPC
+
+  SubnetsPublic:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref SubnetPublic1, !Ref SubnetPublic2 ]]
+
+  SubnetsPrivate:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref SubnetPrivate1, !Ref SubnetPrivate2 ]]
+
+  SubnetPublic1:
+    Description: Public subnet in the Availability Zone A
+    Value: !Ref SubnetPublic1
+
+  SubnetPublic2:
+    Description: Public subnet in the Availability Zone B
+    Value: !Ref SubnetPublic2
+
+  SubnetPrivate1:
+    Description: Private subnet in the Availability Zone A
+    Value: !Ref SubnetPrivate1
+
+  SubnetPrivate2:
+    Description: Private subnet in the Availability Zone B
+    Value: !Ref SubnetPrivate2
+
+  SecurityGroupNoIngress:
+    Description: Security group with no ingress rule
+    Value: !Ref SecurityGroupNoIngress
+  
+  PSGClientWebSites:
+    Description: Frontend Available on
+    Value: !GetAtt MyFrontendInstance.PublicIp
+    Export:
+      Name: !Sub "${AWS::StackName}-Frontend-PublicIp"
+
+#  RdsDBEndpoint:
+#    Description: RDS DB Enpoint
+#    Value: !GetAtt MySqlMasterRDS.Endpoint.Address
