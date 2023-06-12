@@ -230,15 +230,38 @@ export class ClientAppInfrastructureStack extends cdk.Stack {
       userData: cdk.Fn.base64(
         `#!/bin/bash
         sudo su -
-        yum update -y
-        yum install -y git
+        yum update -y 
         curl -sL https://rpm.nodesource.com/setup_16.x | sudo bash -
         yum install -y nodejs
-        npm install -g npm@latest
+        npm install -g npm@latest pm2
+
+        # Nginx config
+        amazon-linux-extras install nginx1 -y
+        systemctl enable nginx
+        echo "server {
+  listen 80;
+  server_name psg-client.com;
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+  }
+}" > /etc/nginx/conf.d/psg-client.conf
+      systemctl restart nginx
 
         # Install PSG-Client-Frontend
-        git clone https://github.com/santisemhan/PSG-Squad03.git /var/www/html
-        chown -R 755 /var/www/html`)
+        yum install -y git
+        git clone https://github.com/santisemhan/PSG-Squad03-WebApp.git /var/www/html
+        chown -R 755 /var/www/html
+        cd /var/www/html
+echo "NEXT_PUBLIC_API_URL=${process.env.NEXT_PUBLIC_API_URL}
+NEXT_PUBLIC_FIREBASE_API_KEY=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}
+NEXT_PUBLIC_FIREBASE_APP_ID=${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}" > .env
+        npm install
+        pm2 start npm --name "next" -- run dev
+        `)
     })
 
     const backendInstance = new ec2.CfnInstance(this, "BackendInstance", {
