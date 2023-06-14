@@ -6,3 +6,13 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+<<<<<<< Updated upstream
+
+# envs
+.env
+=======
+.env
+package-lock.json
+>>>>>>> Stashed changes
+package-lock.json
+package-lock.json
