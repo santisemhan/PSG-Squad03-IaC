@@ -37,7 +37,7 @@ $ cd PSG-Squad03-IaC
 $ nvm use 16.19.1
 $ npm install
 
-# Build
+# Bootstrap
 $ npm run bootstrap
 
 # Deploy
@@ -52,6 +52,7 @@ $ npm run deploy
 * `npm run deploy`      deploy this stack to your default AWS account/region
 * `npm run diff`        compare deployed stack with current state
 * `npm run synth`       emits the synthesized CloudFormation template
+* `npm run bootstrap`       bootstrap the application for proper functionality with the LabRole.
 
 ##  :zap: Infrastructure ##
 <div>
